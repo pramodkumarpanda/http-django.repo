@@ -1,0 +1,90 @@
+INSTALLATION:
+--------------------
+yum install java-1.8.0-openjdk-devel
+curl --silent --location http://pkg.jenkins-ci.org/redhat-stable/jenkins.repo | sudo tee /etc/yum.repos.d/jenkins.repo
+sudo rpm --import https://jenkins-ci.org/redhat/jenkins-ci.org.key
+yum install jenkins
+################################
+certificate details
+########################################
+ 	openssl req -new > jenkins.ssl.csr
+    	openssl rsa -in jenkins_privkey.pem -out jenkins_new.cert.key
+
+    openssl x509 -in jenkins.ssl.csr -out jenkins_new.cert -req -signkey jenkins_new.cert.key -days 365
+
+    # Creates intermediate pkcs12 file
+    openssl pkcs12 -export -out jenkins_keystore.p12 -passout 'pass:jenkins@123'
+     -inkey jenkins_new.cert.key -in jenkins_new.cert -name jenkincert.com
+
+    # Create Java Keystore file
+    keytool -importkeystore -srckeystore jenkins_keystore.p12 \
+     -srcstorepass 'jenkins@123' -srcstoretype PKCS12 \
+     -srcalias jenkincert.com -deststoretype JKS \
+     -destkeystore jenkins_keystore.jks -deststorepass 'jenkins@123' \
+     -destalias jenkincert.com
+
+    # Move keystore file to Jenkins and assign Jenkins service account permissions for same
+    cd /var/lib/jenkins
+    mkdir keystore
+    cp ~/jenkins_keystore.jks /var/lib/jenkins/keystore/
+    chown -R jenkins.jenkins keystore/
+    chmod 700 keystore/
+
+    # Edit variables as mentioned in the blog post 
+
+    # Configure kernel to allow port forwarding
+    sysctl -w net.ipv4.ip_forward=1
+
+    #allow forwarding to localhost on eth0
+    sysctl -w net.ipv4.conf.eth0.route_localnet=1
+
+    Restart Jenkins service
+    systemctl stop jenkins.service
+    systemctl start jenkins.service
+
+
+
+
+
+
+
+#######################################
+vim /etc/sysconfig/jenkins
+	JENKINS_HOME="/var/lib/jenkins"
+
+	JENKINS_JAVA_CMD=""
+
+	JENKINS_USER="jenkins"
+
+
+	JENKINS_JAVA_OPTIONS="-Djava.awt.headless=true"
+
+	JENKINS_PORT="-1"
+
+	JENKINS_LISTEN_ADDRESS=""
+
+	JENKINS_HTTPS_PORT="8443"
+
+	JENKINS_HTTPS_KEYSTORE="/var/lib/jenkins/keystore/jenkins_keystore.jks"
+
+	JENKINS_HTTPS_KEYSTORE_PASSWORD="pramod@123"
+
+	JENKINS_HTTPS_LISTEN_ADDRESS="192.168.122.40"
+
+
+JENKINS_DEBUG_LEVEL="5"
+
+JENKINS_ENABLE_ACCESS_LOG="no"
+
+JENKINS_HANDLER_MAX="100"
+
+JENKINS_HANDLER_IDLE="20"
+
+JENKINS_ARGS=""
+
+
+
+VERIFY THE JENKINS CERTIFICATE:
+----------------------------------
+openssl s_client -connect server4.example.com:8443 -servername server4.example.com > /dev/null
+
