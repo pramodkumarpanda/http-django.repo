@@ -1,0 +1,41 @@
+pipeline{
+    agent any
+    stages{
+        stage('clone the source code'){
+            steps{
+                script{
+                    try{
+                    
+                    checkout(
+                        [$class: 'GitSCM', 
+                        branches: [[name: '*/master']], 
+                        doGenerateSubmoduleConfigurations: false,
+                        extensions: [], submoduleCfg: [], 
+                        userRemoteConfigs: [[credentialsId: 'mycreds_hub', 
+                    url: 'https://github.com/pramodkumarpanda/11_30.repo.git']]])
+                    
+                                      
+                    }
+                catch(Exception error){
+                    sh """
+                        echo "git clone failed"
+                    """
+                }
+                }
+                
+            }
+        }
+        stage('build the source code'){
+            steps{
+                script{
+                   def mvn_loc=tool name: 'mvn_tool', type: 'maven'
+                    sh """
+                        cd login/&&$mvn_loc/bin/mvn clean test package
+                    """
+                }
+            }
+        }
+    }
+}
+
+
