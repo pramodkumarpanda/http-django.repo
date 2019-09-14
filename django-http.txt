@@ -24,7 +24,8 @@ vi /etc/httpd/conf.d/django.conf
 
 
 
-
+useradd user
+su - user
 usermod -a -G user apache
 chmod 710 /home/user
 chmod 664 ~/myproject/db.sqlite3
